@@ -4,25 +4,44 @@
 Shows basic usage of the Sheets API. Prints values from a Google Spreadsheet.
 """
 
+# run: export CREDS_FILE='/Users/chris/.ssh/<service_account>.json';python deploysv2.py
+
 from __future__ import print_function
+from argparse import ArgumentParser
 from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 from apiclient import http
 from apiclient.http import MediaFileUpload
-
-
+from google.oauth2 import service_account
 
 import os
 
+creds_key = 'CREDS_FILE'
+if creds_key in os.environ:
+    SERVICE_ACCOUNT_FILE = os.environ[creds_key]
+# Update with the correct service_account.json file location
+else:
+    SERVICE_ACCOUNT_FILE = '/Users/chris/.ssh/<service_account>.json'
+
+
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
+credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+
+DRIVE = build('drive', 'v3', credentials=credentials)
+
+# creds_file = "/tmp/testrun/client_secret.json"
+
 # Setup the Drive API
-SCOPES = 'https://www.googleapis.com/auth/drive'
-store = file.Storage('credentials.json')
-creds = store.get()
-if not creds or creds.invalid:
-    flow = client.flow_from_clientsecrets('/tmp/client_secret.json', SCOPES)
-    creds = tools.run_flow(flow, store)
-DRIVE = build('drive', 'v3', http=creds.authorize(Http()))
+# store = file.Storage('credentials.json')
+# creds = store.get()
+# if not creds or creds.invalid:
+#     flow = client.flow_from_clientsecrets(creds_file, SCOPES)
+#     creds = tools.run_flow(flow, store)
+#
+#
+# DRIVE = build('drive', 'v3', http=creds.authorize(Http()))
 
 # Call the Drive API for inventory file
 FILENAME = 'Network'
@@ -30,6 +49,13 @@ SRC_MIMETYPE = 'application/vnd.google-apps.spreadsheet'
 DST_MIMETYPE = 'text/csv'
 
 #previous files: 'deploys'
+
+# files = DRIVE.files().list(
+#
+#     orderBy='modifiedTime desc,name').execute().get('files', [])
+#
+# print(files)
+# raise EnvironmentError('Failure')
 
 files = DRIVE.files().list(
     q='name="%s" and mimeType="%s"' % (FILENAME, SRC_MIMETYPE),
@@ -81,3 +107,4 @@ print('File ID:"%s"' % file.get('id'))
 #    for row in values:
 #        # Print columns A and E, which correspond to indices 0 and 4.
 #        print('%s, %s' % (row[0], row[4]))
+
